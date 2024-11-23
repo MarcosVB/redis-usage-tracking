@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Log Usage Event</title>
+  </head>
+  <body>
+    <h1>Log Usage Event</h1>
+    <div>
+      <!-- Predefined buttons for actions -->
+      <button onclick="logEvent('login')">Login</button>
+      <button onclick="logEvent('logout')">Logout</button>
+      <button onclick="logEvent('signup')">Signup</button>
+      <button onclick="logEvent('view_page')">View Page</button>
+    </div>
+
+    <!-- Placeholder for user ID input -->
+    <input type="hidden" id="userId" value="user1" />
+
+    <!-- Clear Data button -->
+    <div>
+      <button onclick="clearData()">Clear All Data</button>
+    </div>
+
+    <!-- Status message -->
+    <div id="statusMessage"></div>
+
+    <a href="/">Back to Visualization</a>
+
+    <script>
+      function logEvent(action) {
+        const userId = document.getElementById("userId").value;
+        const statusMessage = document.getElementById("statusMessage");
+
+        fetch("/log-usage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId, action }),
+        })
+          .then((response) => {
+            if (response.ok) {
+              statusMessage.innerText = `Logged ${action} action successfully!`;
+              statusMessage.style.color = "green";
+            } else {
+              statusMessage.innerText = "Failed to log action.";
+              statusMessage.style.color = "red";
+            }
+          })
+          .catch((error) => {
+            console.error("Error logging action:", error);
+            statusMessage.innerText = "Failed to log action.";
+            statusMessage.style.color = "red";
+          });
+
+        // Clear status message after 3 seconds
+        setTimeout(() => {
+          statusMessage.innerText = "";
+        }, 3000);
+      }
+
+      function clearData() {
+        const statusMessage = document.getElementById("statusMessage");
+
+        fetch("/clear-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              statusMessage.innerText = "All data cleared successfully!";
+              statusMessage.style.color = "green";
+            } else {
+              statusMessage.innerText = "Failed to clear data.";
+              statusMessage.style.color = "red";
+            }
+          })
+          .catch((error) => {
+            console.error("Error clearing data:", error);
+            statusMessage.innerText = "Failed to clear data.";
+            statusMessage.style.color = "red";
+          });
+
+        // Clear status message after 3 seconds
+        setTimeout(() => {
+          statusMessage.innerText = "";
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>
