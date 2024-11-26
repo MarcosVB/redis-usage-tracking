@@ -13,10 +13,34 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         console.log("Fetched data:", data);
-        const timestamps = data.map((d) =>
-          new Date(parseInt(d.message.timestamp)).toISOString()
-        );
-        const actions = data.map((d) => d.message.action);
+
+        const timestamps = [];
+        const actions = [];
+
+        if (Array.isArray(data)) {
+          data.forEach((entry) => {
+            if (Array.isArray(entry.streamResults)) {
+              entry.streamResults.forEach((subEntry) => {
+                timestamps.push(
+                  new Date(parseInt(subEntry.message.timestamp)).toISOString()
+                );
+                actions.push(subEntry.message.action);
+              });
+            } else {
+              timestamps.push(
+                new Date(parseInt(entry.message.timestamp)).toISOString()
+              );
+              actions.push(entry.message.action);
+            }
+          });
+        } else {
+          timestamps.concat(
+            data.map((d) =>
+              new Date(parseInt(d.message.timestamp)).toISOString()
+            )
+          );
+          actions.concat(data.map((d) => d.message.action));
+        }
 
         const ctx = document.getElementById("usageChart").getContext("2d");
         if (window.myChart) {

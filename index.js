@@ -25,7 +25,7 @@ app.get("/log", (req, res) => {
 
 app.post("/log-usage", async (req, res) => {
   const { userId, action } = req.body;
-  await redisClient.xAdd("usage-stream", "*", {
+  await redisClient.xAdd(action, "*", {
     userId,
     action,
     timestamp: Date.now().toString(),
@@ -37,14 +37,22 @@ app.get("/usage-data", async (req, res) => {
   try {
     const { action } = req.query;
 
-    const query = "usage-stream";
-    let results = await redisClient.xRange(query, "-", "+");
-
     if (action) {
-      results = results.filter((entry) => entry.message.action === action);
+      const results = await redisClient.xRange(action, "-", "+");
+      res.json(results);
+      return;
     }
 
-    res.json(results);
+    // Fetch all streams
+    const keys = await redisClient.keys("*");
+    const allResults = [];
+
+    for (const key of keys) {
+      const streamResults = await redisClient.xRange(key, "-", "+");
+      allResults.push({ key, streamResults });
+    }
+
+    res.json(allResults);
   } catch (error) {
     console.error("Error retrieving usage data:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -53,7 +61,10 @@ app.get("/usage-data", async (req, res) => {
 
 app.post("/clear-data", async (req, res) => {
   try {
-    await redisClient.del("usage-stream");
+    const keys = await redisClient.keys("*");
+    for (const key of keys) {
+      await redisClient.del(key);
+    }
     res.sendStatus(200);
   } catch (error) {
     console.error("Error clearing data:", error);
