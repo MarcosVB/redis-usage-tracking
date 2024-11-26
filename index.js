@@ -45,12 +45,13 @@ app.get("/usage-data", async (req, res) => {
 
     // Fetch all streams
     const keys = await redisClient.keys("*");
-    const allResults = [];
-
-    for (const key of keys) {
-      const streamResults = await redisClient.xRange(key, "-", "+");
-      allResults.push({ key, streamResults });
-    }
+    const allStreamResults = await Promise.all(
+      keys.map((key) => redisClient.xRange(key, "-", "+"))
+    );
+    const allResults = keys.map((key, index) => ({
+      key,
+      streamResults: allStreamResults[index],
+    }));
 
     res.json(allResults);
   } catch (error) {
@@ -62,9 +63,7 @@ app.get("/usage-data", async (req, res) => {
 app.post("/clear-data", async (req, res) => {
   try {
     const keys = await redisClient.keys("*");
-    for (const key of keys) {
-      await redisClient.del(key);
-    }
+    await Promise.all(keys.map((key) => redisClient.del(key)));
     res.sendStatus(200);
   } catch (error) {
     console.error("Error clearing data:", error);
