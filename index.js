@@ -19,12 +19,10 @@ redisClient.on("error", (err) => console.error("Redis Client Error", err));
   await redisClient.connect();
 })();
 
-// Route to render logging form
 app.get("/log", (req, res) => {
   res.render("log");
 });
 
-// Endpoint to log usage data
 app.post("/log-usage", async (req, res) => {
   const { userId, action } = req.body;
   await redisClient.xAdd("usage-stream", "*", {
@@ -35,18 +33,24 @@ app.post("/log-usage", async (req, res) => {
   res.redirect("/");
 });
 
-// Endpoint to get usage data
 app.get("/usage-data", async (req, res) => {
   try {
-    const result = await redisClient.xRange("usage-stream", "-", "+");
-    res.json(result);
+    const { action } = req.query;
+
+    const query = "usage-stream";
+    let results = await redisClient.xRange(query, "-", "+");
+
+    if (action) {
+      results = results.filter((entry) => entry.message.action === action);
+    }
+
+    res.json(results);
   } catch (error) {
     console.error("Error retrieving usage data:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// Endpoint to clear usage data
 app.post("/clear-data", async (req, res) => {
   try {
     await redisClient.del("usage-stream");
@@ -57,7 +61,6 @@ app.post("/clear-data", async (req, res) => {
   }
 });
 
-// Serve the frontend
 app.get("/", (req, res) => {
   res.render("index");
 });
